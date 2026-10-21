@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pharmacy Queue & Sales Management System</title>
+    <style>
+        :root {
+            --primary: #0d9488;
+            --primary-dark: #0f766e;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --info: #0284c7;
+            --warning: #d97706;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --text-light: #64748b;
+            --border: #e2e8f0;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            position: relative;
+        }
+        .container {
+            width: 100%;
+            max-width: 1200px;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 25px;
+            margin-top: 10px;
+        }
+        header h1 {
+            margin: 0;
+            color: var(--primary);
+        }
+        header p {
+            color: var(--text-light);
+            margin: 5px 0 0 0;
+        }
+
+        /* Small, Non-Intrusive Top-Right Button */
+        .presentation-toggle-btn {
+            position: fixed !important;
+            top: 15px !important;
+            right: 15px !important;
+            width: auto !important;
+            background-color: var(--warning);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 2000;
+        }
+        .presentation-toggle-btn:hover {
+            background-color: #b45309;
+        }
+
+        /* Compact Popup Box (Top Right) */
+        .presentation-popup {
+            position: fixed;
+            top: 55px;
+            right: 15px;
+            width: 320px;
+            max-height: 80vh;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            border: 1px solid var(--border);
+            display: none;
+            flex-direction: column;
+            z-index: 2001;
+            overflow: hidden;
+        }
+        .presentation-popup.show {
+            display: flex;
+        }
+        .popup-header {
+            background: var(--primary);
+            color: white;
+            padding: 8px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            font-weight: bold;
+        }
+        .popup-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 15px;
+            cursor: pointer;
+            width: auto;
+            padding: 0;
+        }
+        .popup-body {
+            padding: 12px;
+            overflow-y: auto;
+            font-size: 11px;
+            line-height: 1.4;
+        }
+        .popup-body p.prompt-text {
+            background: #f1f5f9;
+            padding: 8px;
+            border-radius: 6px;
+            border-left: 3px solid var(--primary);
+            margin: 0 0 10px 0;
+            font-size: 11px;
+        }
+        .popup-body h4 {
+            color: var(--primary);
+            margin: 8px 0 3px 0;
+            font-size: 12px;
+        }
+        .popup-body ul {
+            margin: 0 0 8px 0;
+            padding-left: 15px;
+        }
+        .popup-body li {
+            margin-bottom: 2px;
+        }
+
+        /* Metrics & Layout */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        @media (max-width: 850px) {
+            .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        .metric-card {
+            background: var(--card-bg);
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border: 1px solid var(--border);
+            text-align: center;
+        }
+        .metric-card h4 {
+            margin: 0 0 5px 0;
+            color: var(--text-light);
+            font-size: 13px;
+            text-transform: uppercase;
+        }
+        .metric-card .value {
+            font-size: 22px;
+            font-weight: bold;
+            color: var(--primary);
+            margin: 0;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 900px) {
+            .dashboard-grid { grid-template-columns: 1fr; }
+        }
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--border);
+            margin-bottom: 20px;
+        }
+        .card h3 {
+            margin-top: 0;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 10px;
+            color: var(--text);
+            font-size: 16px;
+        }
+        .form-group { margin-bottom: 12px; }
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        input, select {
+            width: 100%;
+            padding: 9px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            width: 100%;
+        }
+        button:hover { background-color: var(--primary-dark); }
+        button.danger { background-color: var(--danger); padding: 5px 10px; font-size: 12px; width: auto; }
+        button.success-btn { background-color: var(--success); }
+        button.info-btn { background-color: var(--info); padding: 5px 10px; font-size: 12px; width: auto; margin-right: 4px; }
+
+        .queue-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            max-height: 220px;
+            overflow-y: auto;
+        }
+        .queue-item {
+            background: #f1f5f9;
+            padding: 10px 12px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 4px solid var(--warning);
+        }
+        .active-dispense-box {
+            background: #fefce8;
+            border: 2px dashed var(--warning);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .table-responsive { max-height: 350px; overflow-y: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; text-align: left; }
+        th, td { padding: 10px; border-bottom: 1px solid var(--border); }
+        th { background-color: #f1f5f9; color: var(--text); position: sticky; top: 0; }
+        .badge { background: #e2e8f0; padding: 3px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+
+        /* Receipt Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex; justify-content: center; align-items: center;
+            display: none; z-index: 3000;
+        }
+        .modal-content {
+            background: white; padding: 30px; border-radius: 12px; width: 100%; max-width: 450px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        .receipt-header { text-align: center; border-bottom: 2px dashed var(--border); padding-bottom: 15px; margin-bottom: 15px; }
+        .receipt-header h2 { margin: 0; color: var(--primary); }
+        .receipt-details { font-size: 14px; margin-bottom: 20px; }
+        .receipt-details div { display: flex; justify-content: space-between; margin-bottom: 6px; }
+        .receipt-table { width: 100%; margin-bottom: 20px; border-collapse: collapse; }
+        .receipt-table th, .receipt-table td { padding: 8px; border-bottom: 1px solid var(--border); text-align: left; font-size: 13px; }
+        .signature-section { margin-top: 30px; display: flex; flex-direction: column; align-items: flex-end; }
+        .signature-line { width: 200px; border-bottom: 1px solid #000; margin-bottom: 5px; }
+        .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+
+        @media print {
+            body * { visibility: hidden; }
+            #receiptModal, #receiptModal * { visibility: visible; }
+            #receiptModal { position: absolute; left: 0; top: 0; background: white; width: 100%; height: auto; }
+            .modal-actions, .presentation-toggle-btn, .presentation-popup { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Small Top-Right Sign Button -->
+    <button class="presentation-toggle-btn" onclick="togglePresentationPopup()">💡 Q&A Guide</button>
+
+    <!-- Compact Presentation Popup Box -->
+    <div id="presentationPopup" class="presentation-popup">
+        <div class="popup-header">
+            <span>Assignment & Presentation Notes</span>
+            <button class="popup-close" onclick="togglePresentationPopup()">×</button>
+        </div>
+        <div class="popup-body">
+            <p class="prompt-text"><strong>Prompt:</strong> Describe real-world applications that require queues as a data structure, explain why queues are necessary, and choose one application to develop.</p>
+            
+            <h4>1. Real-World Applications</h4>
+            <ul>
+                <li><strong>Printer Spooling:</strong> Queuing documents to print in order.</li>
+                <li><strong>Call Centers:</strong> Holding incoming customer calls (FIFO).</li>
+                <li><strong>Pharmacy Dispensing:</strong> Patients waiting in line for prescriptions.</li>
+            </ul>
+
+            <h4>2. Why Queues Are Necessary</h4>
+            <ul>
+                <li><strong>Fairness:</strong> Strict First-In, First-Out (FIFO) chronological service.</li>
+                <li><strong>Buffering:</strong> Absorbing workload spikes when demand exceeds speed.</li>
+                <li><strong>Decoupling:</strong> Separating task submission from execution.</li>
+            </ul>
+
+            <h4>3. Developed Application</h4>
+            <ul>
+                <li><strong>Pharmacy Queue & Sales System:</strong> Enqueues patients, dequeues them sequentially, records sales, and prints receipts with signatures.</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="container">
+        <header>
+            <h1>Pharmacy Queue & Sales Management</h1>
+            <p>FIFO Prescription Queue Workflow & Sales Receipt Generator</p>
+        </header>
+
+        <!-- Metrics Overview -->
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <h4>Waiting in Queue</h4>
+                <p class="value" id="queueCount">0</p>
+            </div>
+            <div class="metric-card">
+                <h4>Total Revenue</h4>
+                <p class="value" id="totalRevenue">GHS 0.00</p>
+            </div>
+            <div class="metric-card">
+                <h4>Items Sold</h4>
+                <p class="value" id="totalItems">0</p>
+            </div>
+            <div class="metric-card">
+                <h4>Completed Sales</h4>
+                <p class="value" id="totalTransactions">0</p>
+            </div>
+        </div>
+
+        <div class="dashboard-grid">
+            <!-- Left Column: Queue Management -->
+            <div>
+                <div class="card">
+                    <h3>1. Inbound Prescription (Enqueue)</h3>
+                    <form id="queueForm">
+                        <div class="form-group">
+                            <label for="patientName">Patient Name</label>
+                            <input type="text" id="patientName" required placeholder="e.g. Kofi Mensah">
+                        </div>
+                        <div class="form-group">
+                            <label for="prescribedDrug">Prescribed Drug</label>
+                            <input type="text" id="prescribedDrug" required placeholder="e.g. Amoxicillin 500mg">
+                        </div>
+                        <button type="submit" style="background-color: var(--warning);">Add to Queue</button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <h3>2. Waiting Queue (FIFO)</h3>
+                    <div style="margin-bottom: 15px;">
+                        <button class="success-btn" onclick="dispenseNext()">Dispense Next (Dequeue)</button>
+                    </div>
+                    <ul id="queueList" class="queue-list">
+                        <p style="color: var(--text-light); text-align: center; font-size: 14px;">Queue is currently empty.</p>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Right Column: Active Dispensing & Sales Terminal -->
+            <div>
+                <div class="card">
+                    <h3>3. Active Dispensing & Checkout</h3>
+                    <div id="activeDispenseContainer" class="active-dispense-box">
+                        <p style="color: var(--text-light); margin: 5px 0; text-align: center;">No patient selected. Click "Dispense Next".</p>
+                    </div>
+
+                    <form id="saleForm">
+                        <div class="form-group">
+                            <label for="saleDate">Date</label>
+                            <input type="date" id="saleDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="sellerName">Pharmacist Name</label>
+                            <input type="text" id="sellerName" required placeholder="e.g. Akosua Addo">
+                        </div>
+                        <div class="form-group">
+                            <label for="sellerContact">Contact</label>
+                            <input type="text" id="sellerContact" required placeholder="e.g. 0249876543">
+                        </div>
+                        <div class="form-group">
+                            <label for="quantity">Quantity</label>
+                            <input type="number" id="quantity" min="1" required placeholder="e.g. 2">
+                        </div>
+                        <div class="form-group">
+                            <label for="unitPrice">Unit Price (GHS)</label>
+                            <input type="number" step="0.01" id="unitPrice" min="0" required placeholder="e.g. 10.00">
+                        </div>
+                        <div class="form-group">
+                            <label for="paymentMethod">Payment Method</label>
+                            <select id="paymentMethod">
+                                <option value="Cash">Cash</option>
+                                <option value="Mobile Money">Mobile Money (MoMo)</option>
+                                <option value="Card">Card</option>
+                            </select>
+                        </div>
+                        <button type="submit" id="completeSaleBtn" disabled style="background-color: var(--text-light); cursor: not-allowed;">Complete Sale & Receipt</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- History Log -->
+        <div class="card">
+            <h3>Completed Sales History</h3>
+            <div class="table-responsive">
+                <table id="salesTable">
+                    <thead>
+                        <tr>
+                            <th>Date / Time</th>
+                            <th>Patient & Drug</th>
+                            <th>Qty</th>
+                            <th>Total (GHS)</th>
+                            <th>Pharmacist</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="salesTableBody">
+                        <tr>
+                            <td colspan="6" style="text-align: center; color: var(--text-light);">No completed sales recorded yet.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div style="margin-top: 15px;">
+                <button class="danger" onclick="clearAllSales()" style="width: auto;">Reset All Logs</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Receipt Modal -->
+    <div id="receiptModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="receipt-header">
+                <h2>Pharmacy Official Receipt</h2>
+                <p style="margin: 2px 0 0 0; color: var(--text-light); font-size: 13px;">Dispensed via Prescription Queue</p>
+            </div>
+            <div class="receipt-details" id="receiptDetailsContent"></div>
+            <table class="receipt-table">
+                <thead>
+                    <tr>
+                        <th>Item Description</th>
+                        <th>Qty</th>
+                        <th>Price</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody id="receiptTableBody"></tbody>
+            </table>
+            
+            <div class="signature-section">
+                <div class="signature-line"></div>
+                <small style="color: var(--text-light);">Pharmacist Signature & Stamp</small>
+            </div>
+
+            <div class="modal-actions">
+                <button onclick="window.print()" style="background-color: var(--success);">Print Receipt</button>
+                <button onclick="closeReceiptModal()" style="background-color: var(--text-light);">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function togglePresentationPopup() {
+            const popup = document.getElementById('presentationPopup');
+            popup.classList.toggle('show');
+        }
+
+        const saleDateInput = document.getElementById('saleDate');
+        saleDateInput.value = new Date().toISOString().split('T')[0];
+
+        let queue = JSON.parse(localStorage.getItem('pharmacy_queue')) || [];
+        let sales = JSON.parse(localStorage.getItem('pharmacy_sales')) || [];
+        let currentActivePatient = null;
+
+        const queueForm = document.getElementById('queueForm');
+        const patientNameInput = document.getElementById('patientName');
+        const prescribedDrugInput = document.getElementById('prescribedDrug');
+        const queueList = document.getElementById('queueList');
+        const queueCountEl = document.getElementById('queueCount');
+
+        const activeDispenseContainer = document.getElementById('activeDispenseContainer');
+        const saleForm = document.getElementById('saleForm');
+        const completeSaleBtn = document.getElementById('completeSaleBtn');
+        const sellerNameInput = document.getElementById('sellerName');
+        const sellerContactInput = document.getElementById('sellerContact');
+        const quantityInput = document.getElementById('quantity');
+        const unitPriceInput = document.getElementById('unitPrice');
+        const paymentMethodInput = document.getElementById('paymentMethod');
+
+        const salesTableBody = document.getElementById('salesTableBody');
+        const totalRevenueEl = document.getElementById('totalRevenue');
+        const totalItemsEl = document.getElementById('totalItems');
+        const totalTransactionsEl = document.getElementById('totalTransactions');
+
+        queueForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const pName = patientNameInput.value.trim();
+            const dName = prescribedDrugInput.value.trim();
+
+            if (pName && dName) {
+                queue.push({ id: Date.now(), patientName: pName, drugName: dName });
+                saveAndRefresh();
+                queueForm.reset();
+            }
+        });
+
+        function dispenseNext() {
+            if (queue.length === 0) {
+                alert("The prescription queue is empty!");
+                return;
+            }
+            currentActivePatient = queue.shift();
+            saveAndRefresh();
+        }
+
+        saleForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (!currentActivePatient) return;
+
+            const dateVal = saleDateInput.value;
+            const sellerName = sellerNameInput.value.trim();
+            const sellerContact = sellerContactInput.value.trim();
+            const qty = parseInt(quantityInput.value);
+            const price = parseFloat(unitPriceInput.value);
+            const method = paymentMethodInput.value;
+
+            if (qty > 0 && price >= 0 && sellerName && sellerContact) {
+                const now = new Date();
+                const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                sales.unshift({
+                    id: Date.now(),
+                    date: dateVal,
+                    time: timeString,
+                    patientName: currentActivePatient.patientName,
+                    name: currentActivePatient.drugName,
+                    quantity: qty,
+                    unitPrice: price,
+                    total: qty * price,
+                    method: method,
+                    sellerName: sellerName,
+                    sellerContact: sellerContact
+                });
+
+                currentActivePatient = null;
+                saleForm.reset();
+                saleDateInput.value = new Date().toISOString().split('T')[0];
+                saveAndRefresh();
+            }
+        });
+
+        function openReceipt(id) {
+            const sale = sales.find(s => s.id === id);
+            if (!sale) return;
+
+            document.getElementById('receiptDetailsContent').innerHTML = `
+                <div><span><strong>Receipt ID:</strong></span> <span>#${sale.id.toString().slice(-6)}</span></div>
+                <div><span><strong>Date & Time:</strong></span> <span>${sale.date} ${sale.time}</span></div>
+                <div><span><strong>Patient Name:</strong></span> <span>${sale.patientName}</span></div>
+                <div><span><strong>Pharmacist:</strong></span> <span>${sale.sellerName} (${sale.sellerContact})</span></div>
+                <div><span><strong>Payment Method:</strong></span> <span>${sale.method}</span></div>
+            `;
+
+            document.getElementById('receiptTableBody').innerHTML = `
+                <tr>
+                    <td>${sale.name}</td>
+                    <td>${sale.quantity}</td>
+                    <td>${sale.unitPrice.toFixed(2)}</td>
+                    <td><strong>GHS ${sale.total.toFixed(2)}</strong></td>
+                </tr>
+                <tr>
+                    <td colspan="3" style="text-align:right;"><strong>Grand Total:</strong></td>
+                    <td><strong>GHS ${sale.total.toFixed(2)}</strong></td>
+                </tr>
+            `;
+
+            document.getElementById('receiptModal').style.display = 'flex';
+        }
+
+        function closeReceiptModal() {
+            document.getElementById('receiptModal').style.display = 'none';
+        }
+
+        function deleteSale(id) {
+            sales = sales.filter(s => s.id !== id);
+            saveAndRefresh();
+        }
+
+        function clearAllSales() {
+            if (confirm("Clear all completed sales history?")) {
+                sales = [];
+                saveAndRefresh();
+            }
+        }
+
+        function saveAndRefresh() {
+            localStorage.setItem('pharmacy_queue', JSON.stringify(queue));
+            localStorage.setItem('pharmacy_sales', JSON.stringify(sales));
+            renderUI();
+        }
+
+        function renderUI() {
+            let totalRevenue = 0;
+            let totalItems = 0;
+            sales.forEach(s => {
+                totalRevenue += s.total;
+                totalItems += s.quantity;
+            });
+
+            queueCountEl.textContent = queue.length;
+            totalRevenueEl.textContent = `GHS ${totalRevenue.toFixed(2)}`;
+            totalItemsEl.textContent = totalItems;
+            totalTransactionsEl.textContent = sales.length;
+
+            if (queue.length === 0) {
+                queueList.innerHTML = `<p style="color: var(--text-light); text-align: center; font-size: 14px;">Queue is currently empty.</p>`;
+            } else {
+                queueList.innerHTML = '';
+                queue.forEach((item, index) => {
+                    const li = document.createElement('li');
+                    li.className = 'queue-item';
+                    li.innerHTML = `
+                        <div>
+                            <strong>${index + 1}. ${item.patientName}</strong><br>
+                            <small style="color:var(--text-light)">Rx: ${item.drugName}</small>
+                        </div>
+                        <span class="badge" style="background:#fef08a; color:#854d0e;">Waiting</span>
+                    `;
+                    queueList.appendChild(li);
+                });
+            }
+
+            if (currentActivePatient) {
+                activeDispenseContainer.innerHTML = `
+                    <h4 style="margin: 0 0 5px 0; color: var(--warning);">Dispensing For: ${currentActivePatient.patientName}</h4>
+                    <p style="margin: 0; font-size: 13px;"><strong>Item:</strong> ${currentActivePatient.drugName}</p>
+                `;
+                completeSaleBtn.disabled = false;
+                completeSaleBtn.style.backgroundColor = 'var(--primary)';
+                completeSaleBtn.style.cursor = 'pointer';
+            } else {
+                activeDispenseContainer.innerHTML = `<p style="color: var(--text-light); margin: 5px 0; text-align: center;">No patient selected. Click "Dispense Next".</p>`;
+                completeSaleBtn.disabled = true;
+                completeSaleBtn.style.backgroundColor = 'var(--text-light)';
+                completeSaleBtn.style.cursor = 'not-allowed';
+            }
+
+            if (sales.length === 0) {
+                salesTableBody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-light);">No completed sales recorded yet.</td></tr>`;
+                return;
+            }
+
+            salesTableBody.innerHTML = '';
+            sales.forEach(sale => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><small style="color:var(--text-light); display:block;">${sale.date}</small><strong>${sale.time}</strong></td>
+                    <td><strong>${sale.patientName}</strong><br><small style="color:var(--text-light)">${sale.name}</small></td>
+                    <td>${sale.quantity}</td>
+                    <td><strong>GHS ${sale.total.toFixed(2)}</strong></td>
+                    <td>${sale.sellerName}<br><small style="color:var(--text-light)">${sale.sellerContact}</small></td>
+                    <td>
+                        <button class="info-btn" onclick="openReceipt(${sale.id})">Receipt</button>
+                        <button class="danger" onclick="deleteSale(${sale.id})">X</button>
+                    </td>
+                `;
+                salesTableBody.appendChild(tr);
+            });
+        }
+
+        renderUI();
+    </script>
+</body>
+</html>
